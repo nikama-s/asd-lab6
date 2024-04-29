@@ -1,72 +1,3 @@
-class Graph {
-    constructor(vertices, startNode) {
-        this.vertices = vertices;
-        this.node = startNode;
-        this.adjList = new Map();
-        this.Gt = [[startNode]];
-        this.minSkeletonWeight = 0;
-    }
-
-    addEdge(u, v, w) {
-        if (!this.adjList.has(u)) {
-            this.adjList.set(u, []);
-        }
-        if (!this.adjList.has(v)) {
-            this.adjList.set(v, []);
-        }
-        this.adjList.get(u).push({node: v, weight: w});
-        this.adjList.get(v).push({node: u, weight: w});
-    }
-
-    removeEdge(u, v) {
-        let arrayU = this.adjList.get(u);
-        arrayU = arrayU.filter(vertex => vertex.node !== v);
-        this.adjList.set(u, arrayU);
-
-        let arrayV = this.adjList.get(v);
-        arrayV = arrayV.filter(vertex => vertex.node !== u);
-        this.adjList.set(v, arrayV);
-    }
-
-    prim() {
-        let minWeight = Infinity;
-        let nextNode;
-        let thisNode;
-        for (let j = 0; j < this.Gt[0].length; j++) {
-            let node = this.Gt[0][j];
-            for (let [key, value] of this.adjList.entries()) {
-                if (node === key) {
-                    for (let i = 0; i < value.length; i++) {
-                        if (value[i].weight < minWeight && !this.Gt[0].includes(value[i].node)) {
-                            minWeight = value[i].weight;
-                            nextNode = value[i].node;
-                            thisNode = node;
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-        this.Gt[0].push(nextNode);
-        this.Gt.push([thisNode, nextNode]);
-        if (minWeight !== Infinity) this.minSkeletonWeight += minWeight;
-        let i, j;
-        if (thisNode < nextNode){
-            i = thisNode;
-            j = nextNode;
-        }
-        else {
-            i = nextNode;
-            j = thisNode;
-        }
-        console.log(this.minSkeletonWeight);
-        drawConnection(i, j, nodePositions1, matrix1, 'red', matrixW, 0, 2);
-        drawNode(i, nodePositions1, '#9B4AE7' );
-        drawNode(j, nodePositions1, '#9B4AE7' );
-    }
-
-}
-
 function selfConnection(i, x, y, color, weight) {
     let offsetX;
     ctx.strokeStyle = color;
@@ -94,11 +25,6 @@ function drawNode(i, array, color) {
 }
 
 function drawConnection(i, j, nodePositions, matrix, color, weight, a = 1, lineWidth = 1) {
-    if(a === 1 && i < j) {
-        let weight = matrixW[i][j];
-        if (weight === 0) weight = Infinity;
-        graph.addEdge(i, j, weight);
-    }
     if (matrix[i][j] === 1 && i <= 10 && i <= j) {
         ctx.lineWidth = lineWidth;
         const nodePosI = nodePositions[i];
@@ -152,7 +78,6 @@ function drawRegularConnection(i, j, midX, midY, nodePosI, nodePosJ, color) {
     ctx.lineTo(nodePosI.x, nodePosI.y);
     ctx.stroke();
 }
-
 function PRNG(seed) {
     this.seed = seed;
     const m = Math.pow(2, 31);
@@ -251,7 +176,51 @@ for (let i = 0; i < n; i++) {
 }
 console.log(`Weight graph matrix: `);
 console.log(matrixW);
+class Node {
+    constructor(data, weight) {
+        this.data = data;
+        this.weight = weight;
+        this.next = null;
+    }
+}
 
+class LinkedList {
+    constructor() {
+        this.head = null;
+    }
+    append(data, weight) {
+        const newNode = new Node(data, weight);
+        if (this.head === null) {
+            this.head = newNode;
+        } else {
+            let current = this.head;
+            while (current.next !== null) {
+                current = current.next;
+            }
+            current.next = newNode;
+        }
+    }
+    delete(data) {
+        if (this.head === null) {
+            return;
+        }
+        if (this.head.data === data) {
+            this.head = this.head.next;
+            return;
+        }
+        let current = this.head;
+        let prev = null;
+        while (current !== null) {
+            if (current.data === data) {
+                prev.next = current.next;
+                return;
+            }
+            prev = current;
+            current = current.next;
+        }
+    }
+}
+let listOfNodes = new LinkedList();
 const canvas = document.getElementById('graph');
 const ctx = canvas.getContext('2d');
 let radius = 300;
@@ -272,17 +241,50 @@ for (let i = 0; i < n; i++) {
         break;
     }
 }
-const graph = new Graph(n, startNode);
 for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
         drawConnection(i, j, nodePositions1, matrix1, 'black', matrixW);
     }
 }
 for (let i = 0; i < n; i++) {
+    listOfNodes.append(i, matrixW[i]);
     drawNode(i, nodePositions1, '#9B4AE7');
 }
-console.log(graph.adjList);
+console.log(listOfNodes);
 
-
-
-
+let visitedNodes = [[listOfNodes.head.data]];
+let totalWeight = 0;
+function nextStep(){
+    let minWeight = Infinity;
+    let oneNode;
+    let otherNode;
+    let node = listOfNodes.head;
+    while (node.next !== null) {
+       if(visitedNodes[0].includes(node.data)) {
+           for (let i = 0; i < node.weight.length; i++) {
+               if (node.weight[i] < minWeight && node.weight[i] !== 0 && !visitedNodes[0].includes(i)) {
+                   minWeight = node.weight[i];
+                   oneNode = node.data;
+                   otherNode = i;
+               }
+           }
+       }
+        node = node.next
+    }
+    visitedNodes[0].push(otherNode);
+    visitedNodes.push([oneNode, otherNode])
+    let i, j;
+    if (oneNode > otherNode){
+        i = otherNode;
+        j = oneNode;
+    }
+    else {
+        i = oneNode;
+        j = otherNode;
+    }
+    drawConnection(i, j, nodePositions1, matrix1, 'red', matrixW, 0, 2);
+    drawNode(i, nodePositions1, '#9B4AE7');
+    drawNode(j, nodePositions1, '#9B4AE7');
+    totalWeight += minWeight;
+    console.log(totalWeight);
+}
